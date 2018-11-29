@@ -17,6 +17,7 @@ int GetDirFiles(const std::string& dir, std::vector<std::string>* result);
 int GetFileLength(const std::string& file);
 int FileAppend(int fd, const std::string& value);
 bool FileExists(const std::string& path);
+void WriteUnsignedLong(unsigned long n, char *buf);
 
 // FileLock
 class FileLock  {

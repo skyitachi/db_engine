@@ -4,9 +4,9 @@
 #include <sys/types.h>
 #include <vector>
 #include <errno.h>
-#include "../engine/engine_race/util.h"
-#include "../engine/engine_race/data_store.h"
 #include <chrono>
+#include "util.h"
+#include "data_store.h"
 
 std::chrono::duration<double> read_total;
 namespace polar_race {

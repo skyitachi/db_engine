@@ -110,4 +110,8 @@ int UnlockFile(FileLock* lock) {
   return result;
 }
 
+void WriteUnsignedLong(unsigned long n, char *buf) {
+  memcpy(buf, (char *)&n, sizeof(unsigned long));
+}
+
 }  // namespace polar_race
