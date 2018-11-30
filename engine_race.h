@@ -7,8 +7,11 @@
 #include "util.h"
 #include "door_plate.h"
 #include "data_store.h"
+#include "log.h"
 
 namespace polar_race {
+
+static const char kLogFile[] = "LOG";
 
 class EngineRace : public Engine  {
  public:
@@ -16,7 +19,8 @@ class EngineRace : public Engine  {
 
   explicit EngineRace(const std::string& dir):
     mu_(PTHREAD_MUTEX_INITIALIZER),
-    db_lock_(nullptr), plate_(dir), store_(dir) {
+    db_lock_(nullptr), plate_(dir), store_(dir), log_(dir + "/" + kLogFile) {
+
   }
 
   ~EngineRace();
@@ -40,7 +44,8 @@ class EngineRace : public Engine  {
     FileLock* db_lock_;
     DoorPlate plate_;
     DataStore store_;
-    
+    Log log_;
+
 };
 
 }  // namespace polar_race

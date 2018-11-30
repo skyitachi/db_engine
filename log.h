@@ -14,15 +14,20 @@
 namespace polar_race {
   class Log {
   public:
-    Log(std::string file) : file_(file) {
-      fd_ = open(file.c_str(), O_WRONLY | O_APPEND | O_CREAT);
-      if (fd_ < 0) {
-        fprintf(stderr, "open file error %s", strerror(errno));
-        exit(1);
-      }
-    }
+    Log(std::string file) : file_(file) {}
 
-    polar_race::RetCode AddRecord(const std::string &key, const std::string &v);
+    RetCode Init() {
+      fd_ = open(file_.c_str(), O_RDWR | O_APPEND | O_CREAT, 0644);
+      if (fd_ < 0) {
+        fprintf(stderr, "open file %s error %s", file_.data(), strerror(errno));
+        return kNotFound;
+      }
+      return kSucc;
+    }
+    ~Log() {
+      close(fd_);
+    }
+    polar_race::RetCode AddRecord(const PolarString &key, const PolarString &v);
 
   private:
     std::string file_;

@@ -6,15 +6,17 @@
 #include "util.h"
 
 namespace polar_race {
-  RetCode Log::AddRecord(const std::string &key, const std::string &v) {
+  RetCode Log::AddRecord(const PolarString &key, const PolarString &v) {
     char buf[32];
-    auto keyLen = key.length();
-    auto valueLen = v.length();
+    auto keyLen = key.size();
+    auto valueLen = v.size();
     // TODO: 尽量一次调用
     WriteUnsignedLong(keyLen, buf);
-    write(fd_, buf, sizeof(unsigned long));
-    FileAppend(fd_, key);
+    write(fd_, buf, sizeof(size_t));
+    FileAppend(fd_, key.ToString());
     WriteUnsignedLong(valueLen, buf);
-    FileAppend(fd_, v);
+    write(fd_, buf, sizeof(size_t));
+    FileAppend(fd_, v.ToString());
+    return kSucc;
   }
 }

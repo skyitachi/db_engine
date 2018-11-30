@@ -41,6 +41,11 @@ RetCode EngineRace::Open(const std::string& name, Engine** eptr) {
     delete engine_race;
     return ret;
   }
+  ret = engine_race->log_.Init();
+  if (ret != kSucc) {
+    delete engine_race;
+    return ret;
+  }
   if (0 != LockFile(name + "/" + kLockFile, &(engine_race->db_lock_))) {
     delete engine_race;
     return kIOError;
@@ -59,6 +64,7 @@ EngineRace::~EngineRace() {
 // 3. Write a key-value pair into engine
 RetCode EngineRace::Write(const PolarString& key, const PolarString& value) {
   pthread_mutex_lock(&mu_);
+  log_.AddRecord(key, value);
   Location location;
   auto start = std::chrono::system_clock::now();
   RetCode ret = store_.Append(value.ToString(), &location);
