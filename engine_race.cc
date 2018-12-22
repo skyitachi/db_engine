@@ -8,83 +8,87 @@
 #include "util.h"
 #include "engine_race.h"
 
-std::chrono::duration<double> store_total;
-std::chrono::duration<double> plate_total;
-
 namespace polar_race {
 
-static const char kLockFile[] = "LOCK";
+  static const char kLockFile[] = "LOCK";
 
-RetCode Engine::Open(const std::string& name, Engine** eptr) {
-  return EngineRace::Open(name, eptr);
-}
 
-Engine::~Engine() {
-}
+  RetCode Engine::Open(const std::string &name, bool append, Engine **eptr) {
+    return EngineRace::Open(name, append, eptr);
+  }
+
+  Engine::~Engine() {
+  }
 
 /*
  * Complete the functions below to implement you own engine
  */
 
 // 1. Open engine
-RetCode EngineRace::Open(const std::string& name, Engine** eptr) {
-  *eptr = NULL;
-  EngineRace *engine_race = new EngineRace(name);
+  RetCode EngineRace::Open(const std::string &name, bool append, Engine **eptr) {
+    *eptr = NULL;
+    EngineRace *engine_race = new EngineRace(name, append);
 
-  RetCode ret = engine_race->plate_.Init();
-  if (ret != kSucc) {
-    delete engine_race;
-    return ret;
+//  RetCode ret = engine_race->plate_.Init();
+//  if (ret != kSucc) {
+//    delete engine_race;
+//    return ret;
+//  }
+//  ret = engine_race->store_.Init();
+//  if (ret != kSucc) {
+//    delete engine_race;
+//    return ret;
+//  }
+//  if (0 != LockFile(name + "/" + kLockFile, &(engine_race->db_lock_))) {
+//    delete engine_race;
+//    return kIOError;
+//  }
+    *eptr = engine_race;
+    return kSucc;
   }
-  ret = engine_race->store_.Init();
-  if (ret != kSucc) {
-    delete engine_race;
-    return ret;
-  }
-  if (0 != LockFile(name + "/" + kLockFile, &(engine_race->db_lock_))) {
-    delete engine_race;
-    return kIOError;
-  }
-  *eptr = engine_race;
-  return kSucc;
-}
 
 // 2. Close engine
-EngineRace::~EngineRace() {
-  if (db_lock_) {
-    UnlockFile(db_lock_);
+  EngineRace::~EngineRace() {
+    if (db_lock_) {
+      UnlockFile(db_lock_);
+    }
   }
-}
 
 // 3. Write a key-value pair into engine
-RetCode EngineRace::Write(const PolarString& key, const PolarString& value) {
-  pthread_mutex_lock(&mu_);
-  Location location;
-  auto start = std::chrono::system_clock::now();
-  RetCode ret = store_.Append(value.ToString(), &location);
-  auto t1 = std::chrono::system_clock::now();
-  store_total += (t1 - start);
-  if (ret == kSucc) {
-    ret = plate_.AddOrUpdate(key.ToString(), location);
-    auto t2 = std::chrono::system_clock::now();
-    plate_total += (t2 - t1);
+  RetCode EngineRace::Write(const PolarString &key, const PolarString &value) {
+    pthread_mutex_lock(&mu_);
+    int64_t valueOffset;
+    RetCode ret = keyIndex_->Append(key.ToString(), &valueOffset);
+    if (ret == kSucc) {
+      if (append_) {
+        ret = valueFile_->Append(value);
+      } else {
+        ret = valueFile_->Write(value, valueOffset * kValueLength);
+      }
+      if (ret != kSucc) {
+        pthread_mutex_unlock(&mu_);
+        return ret;
+      }
+    }
+    pthread_mutex_unlock(&mu_);
+    return kSucc;
   }
-  pthread_mutex_unlock(&mu_);
-  return kSucc;
-}
 
 // 4. Read value of a key
-RetCode EngineRace::Read(const PolarString& key, std::string* value) {
-  pthread_mutex_lock(&mu_);
-  Location location;
-  RetCode ret = plate_.Find(key.ToString(), &location);
-  if (ret == kSucc) {
-    value->clear();
-    ret = store_.Read(location, value);
+  RetCode EngineRace::Read(const PolarString &key, std::string *value) {
+    pthread_mutex_lock(&mu_);
+    int64_t offset;
+    RetCode ret = keyIndex_->Lookup(key.ToString(), &offset);
+    if (ret == kSucc) {
+      ret = valueFile_->Read(offset, value);
+      if (ret != kSucc) {
+        pthread_mutex_unlock(&mu_);
+        return ret;
+      }
+    }
+    pthread_mutex_unlock(&mu_);
+    return kSucc;
   }
-  pthread_mutex_unlock(&mu_);
-  return kSucc;
-}
 
 /*
  * NOTICE: Implement 'Range' in quarter-final,
@@ -97,9 +101,9 @@ RetCode EngineRace::Read(const PolarString& key, std::string* value) {
 // upper=="" is treated as a key after all keys in the database.
 // Therefore the following call will traverse the entire database:
 //   Range("", "", visitor)
-RetCode EngineRace::Range(const PolarString& lower, const PolarString& upper,
-    Visitor &visitor) {
-  return kSucc;
-}
+  RetCode EngineRace::Range(const PolarString &lower, const PolarString &upper,
+                            Visitor &visitor) {
+    return kSucc;
+  }
 
 }  // namespace polar_race

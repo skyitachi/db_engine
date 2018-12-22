@@ -7,16 +7,22 @@
 #include "util.h"
 #include "door_plate.h"
 #include "data_store.h"
+#include "file_index.h"
+#include "file_value.h"
 
 namespace polar_race {
 
 class EngineRace : public Engine  {
  public:
-  static RetCode Open(const std::string& name, Engine** eptr);
+  static RetCode Open(const std::string& name, bool append, Engine** eptr);
 
-  explicit EngineRace(const std::string& dir):
+  explicit EngineRace(const std::string& dir, bool append):
     mu_(PTHREAD_MUTEX_INITIALIZER),
-    db_lock_(nullptr), plate_(dir), store_(dir) {
+    db_lock_(nullptr), plate_(dir), store_(dir), append_(append) {
+    log = fopen("./engine.log", "war+");
+    keyIndex_ = new FileIndex(dir + std::string("/KEY_INDEX"), log);
+    valueFile_ = new FileValue(dir + std::string("/VALUE"), append);
+    valueFile_->setLog(log);
   }
 
   ~EngineRace();
@@ -40,7 +46,10 @@ class EngineRace : public Engine  {
     FileLock* db_lock_;
     DoorPlate plate_;
     DataStore store_;
-    
+    FILE* log;
+    FileIndex* keyIndex_;
+    FileValue* valueFile_;
+    bool append_;
 };
 
 }  // namespace polar_race

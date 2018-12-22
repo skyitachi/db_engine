@@ -31,7 +31,7 @@ class Engine {
  public:
   // Open engine
   static RetCode Open(const std::string& name,
-      Engine** eptr);
+      bool append, Engine** eptr);
 
   Engine() { }
 
