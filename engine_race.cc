@@ -64,19 +64,12 @@ EngineRace::~EngineRace() {
 // 3. Write a key-value pair into engine
 RetCode EngineRace::Write(const PolarString& key, const PolarString& value) {
   pthread_mutex_lock(&mu_);
-  log_.AddRecord(key, value);
-  Location location;
-  auto start = std::chrono::system_clock::now();
-  RetCode ret = store_.Append(value.ToString(), &location);
-  auto t1 = std::chrono::system_clock::now();
-  store_total += (t1 - start);
+  RetCode ret = log_.AddRecord(key, value);
   if (ret == kSucc) {
-    ret = plate_.AddOrUpdate(key.ToString(), location);
-    auto t2 = std::chrono::system_clock::now();
-    plate_total += (t2 - t1);
+    ret = mem_.Insert(key, value);
   }
   pthread_mutex_unlock(&mu_);
-  return kSucc;
+  return ret;
 }
 
 // 4. Read value of a key

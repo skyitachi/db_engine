@@ -8,10 +8,12 @@
 #include "door_plate.h"
 #include "data_store.h"
 #include "log.h"
+#include "memtable.h"
 
 namespace polar_race {
 
 static const char kLogFile[] = "LOG";
+static const int kThreshold = 1024;
 
 class EngineRace : public Engine  {
  public:
@@ -19,7 +21,11 @@ class EngineRace : public Engine  {
 
   explicit EngineRace(const std::string& dir):
     mu_(PTHREAD_MUTEX_INITIALIZER),
-    db_lock_(nullptr), plate_(dir), store_(dir), log_(dir + "/" + kLogFile) {
+    db_lock_(nullptr),
+    plate_(dir),
+    store_(dir),
+    log_(dir + "/" + kLogFile),
+    mem_(kThreshold) {
 
   }
 
@@ -44,6 +50,7 @@ class EngineRace : public Engine  {
     FileLock* db_lock_;
     DoorPlate plate_;
     DataStore store_;
+    Memtable mem_;
     Log log_;
 
 };
