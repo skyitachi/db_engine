@@ -2,6 +2,9 @@
 
 namespace polar_race {
   FileIndex::FileIndex(const std::string &filenameString, FILE *log) {
+    indexItemList = nullptr;
+    indexFileSize_ = 0;
+    fileName_ = filenameString;
     log_ = log;
     const char *filename = filenameString.c_str();
     fd_ = open(filename, O_RDWR | O_CREAT | O_APPEND, 0644);
@@ -18,24 +21,32 @@ namespace polar_race {
       fprintf(log_, "Error FileIndex open %s failed %s\n", filename, strerror(errno));
       exit(1);
     }
-    indexItemList = (IndexItem *) malloc(indexFileSize_);
+    if (indexFileSize_ > 0) {
+      indexItemList = (IndexItem *) malloc(indexFileSize_);
+      if (indexItemList == nullptr) {
+        fprintf(log_, "Error FileIndex malloc %s failed %s\n", filename, strerror(errno));
+        exit(1);
+      }
+    }
     fprintf(log_, "FileIndex open %s sucessfully\n", filename);
     keysCount_ = indexFileSize_ / kIndexItemLength;
   }
 
   RetCode FileIndex::Append(const std::string &key, int64_t *offset) {
+    std::lock_guard<std::mutex> lock(mu_);
+    // Note: make sure loaded
     if (!loaded_) {
       load();
     }
     if (memoryIndex.find(key) == memoryIndex.end()) {
-      struct IndexItem item;
+      IndexItem item;
       memcpy(item.keyBytes, key.data(), kKeyLength);
       item.offset = keysCount_;
       memoryIndex[key] = keysCount_;
       *offset = keysCount_;
 
       keysCount_ += 1;
-      int n = write(fd_, &item, kIndexItemLength);
+      ssize_t n = write(fd_, &item, kIndexItemLength);
       if (n != kIndexItemLength) {
         // fprintf(log_, "FileIndex::Append write error just write %d byte\n", n);
         return kIOError;
@@ -49,6 +60,7 @@ namespace polar_race {
   }
 
   RetCode FileIndex::Lookup(const std::string &key, int64_t *offset) {
+    std::lock_guard<std::mutex> lock(mu_);
     if (!loaded_) {
       load();
     }
@@ -60,9 +72,21 @@ namespace polar_race {
   }
 
   void FileIndex::load() {
+    if (indexFileSize_ == 0 || indexItemList == nullptr) {
+      loaded_ = true;
+    }
     if (loaded_)
       return;
-    read(fd_, indexItemList, indexFileSize_);
+    // Note: append模式打开会导致 read的数据量为0
+    ssize_t nread = read(fd_, indexItemList, indexFileSize_);
+    if (nread < indexFileSize_) {
+      fprintf(log_,
+          "Error FileIndex::load::read unexpected %zd size data, expected %lld when read %s in thread %lld\n",
+          nread, indexFileSize_, fileName_.c_str(), std::this_thread::get_id());
+      exit(1);
+    } else {
+      fprintf(log_, "FileIndex::load::read %zd bytes data for %s, in thread %lld\n", nread, fileName_.c_str(), std::this_thread::get_id());
+    }
     for (int i = 0; i < keysCount_; i++) {
       const std::string key(indexItemList[i].keyBytes, kKeyLength);
       memoryIndex[key] = indexItemList[i].offset;

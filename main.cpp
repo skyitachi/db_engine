@@ -172,12 +172,12 @@ int main(int argc, char **argv) {
   const std::string kIndexPathString = kEnginePathString + "/KEY_INDEX";
   sprintf(cmd, "rm %s", kIndexPathString.c_str());
   std::cout << "delete cmds: " << cmd << std::endl;
-  system(cmd);
+//  system(cmd);
 
   const std::string kValuePathString = kEnginePathString + "/VALUE";
   sprintf(cmd, "rm %s", kValuePathString.c_str());
   std::cout << "delete cmds: " << cmd << std::endl;
-  system(cmd);
+//  system(cmd);
   int testCase = 10;
   if (argc > 1) {
     testCase = atoi(argv[1]);
@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
   auto end = std::chrono::system_clock::now();
   auto el = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-  validate(engine);
+//  validate(engine);
   // ret = engine->Write("aaa", "aaaaaaaaaaa");
   // assert (ret == kSucc);
   // ret = engine->Write("aaa", "111111111111111111111111111111111111111111");
@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
   // assert (ret == kSucc);
   // printf("Read bbb value: %s\n", value.c_str());
   engine_log = fopen("./engine_test.log", "war+");
-//  benchmark_write(engine, testCase);
+  benchmark_write(engine, testCase);
 //
 //  benchmark_read(engine, testCase);
   // std::cout << "calIndex_total consumes " << calcindex_total.count() << " s\n";

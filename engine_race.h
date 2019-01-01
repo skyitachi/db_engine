@@ -3,6 +3,7 @@
 #define ENGINE_RACE_ENGINE_RACE_H_
 #include <pthread.h>
 #include <string>
+#include <vector>
 #include "include/engine.h"
 #include "util.h"
 #include "door_plate.h"
@@ -12,17 +13,20 @@
 
 namespace polar_race {
 
+  static const int kSliceCount = 1024;
+  static const std::string kFileIndexPrefix = "/KEY_INDEX";
+  static const std::string kValueFilePreifx = "/VALUE";
+
 class EngineRace : public Engine  {
  public:
   static RetCode Open(const std::string& name, bool append, Engine** eptr);
 
   explicit EngineRace(const std::string& dir, bool append):
     mu_(PTHREAD_MUTEX_INITIALIZER),
-    db_lock_(nullptr), plate_(dir), store_(dir), append_(append) {
+    db_lock_(nullptr), dir_(dir), store_(dir), append_(append) {
     log = fopen("./engine.log", "war+");
-    keyIndex_ = new FileIndex(dir + std::string("/KEY_INDEX"), log);
-    valueFile_ = new FileValue(dir + std::string("/VALUE"), append);
-    valueFile_->setLog(log);
+    initFileIndexList();
+    initValueFileList();
   }
 
   ~EngineRace();
@@ -41,14 +45,20 @@ class EngineRace : public Engine  {
       const PolarString& upper,
       Visitor &visitor) override;
 
-  private: 
+  inline int partition(const PolarString& key) {
+    return key.data()[0] << 2 & key.data()[1] >> 6;
+  }
+
+  private:
+    RetCode initFileIndexList();
+    RetCode initValueFileList();
     pthread_mutex_t mu_;
     FileLock* db_lock_;
-    DoorPlate plate_;
     DataStore store_;
     FILE* log;
-    FileIndex* keyIndex_;
-    FileValue* valueFile_;
+    std::string dir_;
+    std::vector<FileIndex*> keyIndexList_;
+    std::vector<FileValue*> valueFileList_;
     bool append_;
 };
 

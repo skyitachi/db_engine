@@ -8,6 +8,7 @@
 #include <string>
 #include <unistd.h>
 #include <fcntl.h>
+#include <mutex>
 #include "include/engine.h"
 #include "file_index.h"
 
@@ -44,6 +45,7 @@ namespace polar_race {
   private:
     int fd_;
     FILE *log_;
+    std::mutex mu_;
   };
 }
 

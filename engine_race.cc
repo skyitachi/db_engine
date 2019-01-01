@@ -56,31 +56,29 @@ namespace polar_race {
 
 // 3. Write a key-value pair into engine
   RetCode EngineRace::Write(const PolarString &key, const PolarString &value) {
-    pthread_mutex_lock(&mu_);
+    int slice = partition(key);
     int64_t valueOffset;
-    RetCode ret = keyIndex_->Append(key.ToString(), &valueOffset);
+    RetCode ret = keyIndexList_[slice]->Append(key.ToString(), &valueOffset);
     if (ret == kSucc) {
       if (append_) {
-        ret = valueFile_->Append(value);
+        ret = valueFileList_[slice]->Append(value);
       } else {
-        ret = valueFile_->Write(value, valueOffset * kValueLength);
+        ret = valueFileList_[slice]->Write(value, valueOffset * kValueLength);
       }
       if (ret != kSucc) {
-        pthread_mutex_unlock(&mu_);
         return ret;
       }
     }
-    pthread_mutex_unlock(&mu_);
     return kSucc;
   }
 
 // 4. Read value of a key
   RetCode EngineRace::Read(const PolarString &key, std::string *value) {
-    pthread_mutex_lock(&mu_);
+    int slice = partition(key);
     int64_t offset;
-    RetCode ret = keyIndex_->Lookup(key.ToString(), &offset);
+    RetCode ret = keyIndexList_[slice]->Lookup(key.ToString(), &offset);
     if (ret == kSucc) {
-      ret = valueFile_->Read(offset, value);
+      ret = valueFileList_[slice]->Read(offset, value);
       if (ret != kSucc) {
         pthread_mutex_unlock(&mu_);
         return ret;
@@ -106,4 +104,19 @@ namespace polar_race {
     return kSucc;
   }
 
+  RetCode EngineRace::initFileIndexList() {
+    for(int i = 0; i < kSliceCount; i++) {
+      keyIndexList_.push_back(new FileIndex(dir_ + kFileIndexPrefix + std::to_string(i), log));
+    }
+    return kSucc;
+  }
+
+  RetCode EngineRace::initValueFileList() {
+    for(int i = 0; i < kSliceCount; i++) {
+      FileValue* fileValue = new FileValue(dir_ + kValueFilePreifx + std::to_string(i), append_);
+      fileValue->setLog(log);
+      valueFileList_.push_back(fileValue);
+    }
+    return kSucc;
+  }
 }  // namespace polar_race

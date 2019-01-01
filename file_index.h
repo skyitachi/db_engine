@@ -10,6 +10,7 @@
 #include <mutex>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <thread>
 #include "include/engine.h"
 
 namespace polar_race {
@@ -42,6 +43,8 @@ namespace polar_race {
     std::map<const std::string, int64_t> memoryIndex;
     IndexItem *indexItemList;
     FILE *log_;
+    std::mutex mu_;
+    std::string fileName_;
 
   };
 }
