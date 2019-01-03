@@ -28,21 +28,6 @@ namespace polar_race {
   RetCode EngineRace::Open(const std::string &name, bool append, Engine **eptr) {
     *eptr = NULL;
     EngineRace *engine_race = new EngineRace(name, append);
-
-//  RetCode ret = engine_race->plate_.Init();
-//  if (ret != kSucc) {
-//    delete engine_race;
-//    return ret;
-//  }
-//  ret = engine_race->store_.Init();
-//  if (ret != kSucc) {
-//    delete engine_race;
-//    return ret;
-//  }
-//  if (0 != LockFile(name + "/" + kLockFile, &(engine_race->db_lock_))) {
-//    delete engine_race;
-//    return kIOError;
-//  }
     *eptr = engine_race;
     return kSucc;
   }
@@ -80,11 +65,9 @@ namespace polar_race {
     if (ret == kSucc) {
       ret = valueFileList_[slice]->Read(offset, value);
       if (ret != kSucc) {
-        pthread_mutex_unlock(&mu_);
         return ret;
       }
     }
-    pthread_mutex_unlock(&mu_);
     return kSucc;
   }
 
@@ -113,7 +96,7 @@ namespace polar_race {
 
   RetCode EngineRace::initValueFileList() {
     for(int i = 0; i < kSliceCount; i++) {
-      FileValue* fileValue = new FileValue(dir_ + kValueFilePreifx + std::to_string(i), append_);
+      FileValue* fileValue = new FileValue(dir_ + kValueFilePrefix + std::to_string(i), append_);
       fileValue->setLog(log);
       valueFileList_.push_back(fileValue);
     }

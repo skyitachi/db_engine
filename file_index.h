@@ -27,7 +27,10 @@ namespace polar_race {
     };
 
     FileIndex(const std::string &filenameString, FILE *log);
-
+    
+    ~FileIndex() {
+      fprintf(log_, "%s destoryed\n", fileName_.c_str());
+    }
     // 顺序写
     RetCode Append(const std::string &key, int64_t *offset);
 
@@ -45,6 +48,7 @@ namespace polar_race {
     FILE *log_;
     std::mutex mu_;
     std::string fileName_;
+    
 
   };
 }

@@ -13,16 +13,16 @@
 
 namespace polar_race {
 
-  static const int kSliceCount = 1024;
+//  static const int kSliceCount = 1024;
+  static const int kSliceCount = 2;
   static const std::string kFileIndexPrefix = "/KEY_INDEX";
-  static const std::string kValueFilePreifx = "/VALUE";
+  static const std::string kValueFilePrefix = "/VALUE";
 
 class EngineRace : public Engine  {
  public:
   static RetCode Open(const std::string& name, bool append, Engine** eptr);
 
   explicit EngineRace(const std::string& dir, bool append):
-    mu_(PTHREAD_MUTEX_INITIALIZER),
     db_lock_(nullptr), dir_(dir), store_(dir), append_(append) {
     log = fopen("./engine.log", "war+");
     initFileIndexList();
@@ -46,13 +46,14 @@ class EngineRace : public Engine  {
       Visitor &visitor) override;
 
   inline int partition(const PolarString& key) {
-    return key.data()[0] << 2 & key.data()[1] >> 6;
+//    return 0;
+    return key.data()[0] >> 7;
+//    return key.data()[0] << 2 & key.data()[1] >> 6;
   }
 
   private:
     RetCode initFileIndexList();
     RetCode initValueFileList();
-    pthread_mutex_t mu_;
     FileLock* db_lock_;
     DataStore store_;
     FILE* log;

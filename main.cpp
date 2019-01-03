@@ -88,6 +88,7 @@ void benchmark_write(Engine *engine, int testCase) {
     boost::asio::post(pool,
                       [i, engine, &total]() {
                         char keyBuf[8];
+                        // 小端存储
                         memcpy(keyBuf, &i, sizeof(int64_t));
                         memcpy(gValueBuf, &i, sizeof(int64_t));
                         // showBuffer(keyBuf, 8);
