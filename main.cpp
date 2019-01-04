@@ -32,6 +32,7 @@ char gValueBuf[1024 * 4];
 std::mutex gMutex;
 std::mutex logMutex;
 int counter = 0;
+int failed = 0;
 static FILE *engine_log;
 
 void showBuffer(const char *buf, size_t n) {
@@ -84,7 +85,7 @@ void benchmark_write(Engine *engine, int testCase) {
   std::chrono::duration<double> total;
   boost::asio::thread_pool pool(64);
   auto test_start = std::chrono::system_clock::now();
-  for (int64_t i = 128; i < testCase; i++) {
+  for (int64_t i = 0; i < testCase; i++) {
     boost::asio::post(pool,
                       [i, engine, &total]() {
                         char keyBuf[8];
@@ -99,6 +100,9 @@ void benchmark_write(Engine *engine, int testCase) {
                         auto end = std::chrono::system_clock::now();
                         std::lock_guard<std::mutex> lock(gMutex);
                         counter += 1;
+                        if (ret != kSucc) {
+                          failed += 1;
+                        }
                         auto el = (end - start);
                         total += el;
                       }
@@ -107,6 +111,7 @@ void benchmark_write(Engine *engine, int testCase) {
   pool.join();
   auto test_end = std::chrono::system_clock::now();
   std::cout << "global counter is " << counter << std::endl;
+  std::cout << "global failed is " << failed << std::endl;
   std::cout << "write consumes: " << total.count() << " s\n";
   auto test_el = (test_end - test_start);
   std::chrono::duration<double> test_total;

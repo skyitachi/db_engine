@@ -14,7 +14,7 @@
 namespace polar_race {
 
 //  static const int kSliceCount = 1024;
-  static const int kSliceCount = 2;
+  static const int kSliceCount = 1024;
   static const std::string kFileIndexPrefix = "/KEY_INDEX";
   static const std::string kValueFilePrefix = "/VALUE";
 
@@ -46,8 +46,9 @@ class EngineRace : public Engine  {
       Visitor &visitor) override;
 
   inline int partition(const PolarString& key) {
+    return uint16_t(key.data()[0]) << 2 & uint16_t(key.data()[1]) >> 6;
 //    return 0;
-    return (uint8_t(key.data()[0])) >> 7;
+//    return (uint8_t(key.data()[0])) >> 7;
 //    return key.data()[0] << 2 & key.data()[1] >> 6;
   }
 

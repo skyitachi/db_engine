@@ -43,7 +43,6 @@ namespace polar_race {
   RetCode EngineRace::Write(const PolarString &key, const PolarString &value) {
     int slice = partition(key);
     int64_t valueOffset;
-    fprintf(log, "current slice is %d\n", slice);
     if (keyIndexList_[slice] == nullptr) {
       fprintf(log, "current slice is %d not found\n", slice);
       return kNotFound;
