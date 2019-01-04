@@ -47,7 +47,7 @@ class EngineRace : public Engine  {
 
   inline int partition(const PolarString& key) {
 //    return 0;
-    return key.data()[0] >> 7;
+    return (uint8_t(key.data()[0])) >> 7;
 //    return key.data()[0] << 2 & key.data()[1] >> 6;
   }
 

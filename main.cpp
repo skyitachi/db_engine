@@ -84,7 +84,7 @@ void benchmark_write(Engine *engine, int testCase) {
   std::chrono::duration<double> total;
   boost::asio::thread_pool pool(64);
   auto test_start = std::chrono::system_clock::now();
-  for (int64_t i = 0; i < testCase; i++) {
+  for (int64_t i = 128; i < testCase; i++) {
     boost::asio::post(pool,
                       [i, engine, &total]() {
                         char keyBuf[8];
@@ -95,7 +95,7 @@ void benchmark_write(Engine *engine, int testCase) {
                         polar_race::PolarString k(keyBuf, 8);
                         polar_race::PolarString v(gValueBuf, 4096);
                         auto start = std::chrono::system_clock::now();
-                        engine->Write(k, v);
+                        RetCode ret = engine->Write(k, v);
                         auto end = std::chrono::system_clock::now();
                         std::lock_guard<std::mutex> lock(gMutex);
                         counter += 1;
