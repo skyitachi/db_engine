@@ -34,7 +34,6 @@ namespace polar_race {
   }
 
   RetCode FileIndex::Append(const std::string &key, int64_t *offset) {
-    std::lock_guard<std::mutex> lock(mu_);
     if (memoryIndex.find(key) == memoryIndex.end()) {
       IndexItem item;
       memcpy(item.keyBytes, key.data(), kKeyLength);
@@ -55,10 +54,6 @@ namespace polar_race {
   }
 
   RetCode FileIndex::Lookup(const std::string &key, int64_t *offset) {
-    std::lock_guard<std::mutex> lock(mu_);
-    if (!loaded_) {
-      load();
-    }
     if (memoryIndex.find(key) == memoryIndex.end()) {
       return kNotFound;
     }

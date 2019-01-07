@@ -46,7 +46,6 @@ namespace polar_race {
     std::map<const std::string, int64_t> memoryIndex;
     IndexItem *indexItemList;
     FILE *log_;
-    std::mutex mu_;
     std::string fileName_;
     
 

@@ -4,10 +4,9 @@
 #include <pthread.h>
 #include <string>
 #include <vector>
+#include <memory>
 #include "include/engine.h"
 #include "util.h"
-#include "door_plate.h"
-#include "data_store.h"
 #include "file_index.h"
 #include "file_value.h"
 
@@ -23,10 +22,11 @@ class EngineRace : public Engine  {
   static RetCode Open(const std::string& name, bool append, Engine** eptr);
 
   explicit EngineRace(const std::string& dir, bool append):
-    db_lock_(nullptr), dir_(dir), store_(dir), append_(append) {
+    db_lock_(nullptr), dir_(dir), append_(append) {
     log = fopen("./engine.log", "war+");
     initFileIndexList();
     initValueFileList();
+    initMutex();
   }
 
   ~EngineRace();
@@ -51,16 +51,22 @@ class EngineRace : public Engine  {
 //    return (uint8_t(key.data()[0])) >> 7;
 //    return key.data()[0] << 2 & key.data()[1] >> 6;
   }
+  
+  inline void initMutex() {
+    for (int i = 0; i <= kSliceCount; i++) {
+      mutexList_.push_back(std::make_unique<std::mutex>());
+    }
+  }
 
   private:
     RetCode initFileIndexList();
     RetCode initValueFileList();
     FileLock* db_lock_;
-    DataStore store_;
     FILE* log;
     std::string dir_;
     std::vector<FileIndex*> keyIndexList_;
     std::vector<FileValue*> valueFileList_;
+    std::vector<std::unique_ptr<std::mutex>> mutexList_;
     bool append_;
 };
 

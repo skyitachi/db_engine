@@ -43,10 +43,7 @@ namespace polar_race {
   RetCode EngineRace::Write(const PolarString &key, const PolarString &value) {
     int slice = partition(key);
     int64_t valueOffset;
-    if (keyIndexList_[slice] == nullptr) {
-      fprintf(log, "current slice is %d not found\n", slice);
-      return kNotFound;
-    }
+    std::lock_guard<std::mutex> lock(*mutexList_[slice]);
     RetCode ret = keyIndexList_[slice]->Append(key.ToString(), &valueOffset);
     if (ret == kSucc) {
       if (append_) {
@@ -65,6 +62,7 @@ namespace polar_race {
   RetCode EngineRace::Read(const PolarString &key, std::string *value) {
     int slice = partition(key);
     int64_t offset;
+    std::lock_guard<std::mutex> lock(*mutexList_[slice]);
     RetCode ret = keyIndexList_[slice]->Lookup(key.ToString(), &offset);
     if (ret == kSucc) {
       ret = valueFileList_[slice]->Read(offset, value);
@@ -92,14 +90,14 @@ namespace polar_race {
   }
 
   RetCode EngineRace::initFileIndexList() {
-    for(int i = 0; i < kSliceCount; i++) {
+    for(int i = 0; i <= kSliceCount; i++) {
       keyIndexList_.push_back(new FileIndex(dir_ + kFileIndexPrefix + std::to_string(i), log));
     }
     return kSucc;
   }
 
   RetCode EngineRace::initValueFileList() {
-    for(int i = 0; i < kSliceCount; i++) {
+    for(int i = 0; i <= kSliceCount; i++) {
       FileValue* fileValue = new FileValue(dir_ + kValueFilePrefix + std::to_string(i), append_);
       fileValue->setLog(log);
       valueFileList_.push_back(fileValue);

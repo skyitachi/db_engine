@@ -45,7 +45,6 @@ namespace polar_race {
   private:
     int fd_;
     FILE *log_;
-    std::mutex mu_;
   };
 }
 
