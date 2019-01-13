@@ -77,8 +77,21 @@ namespace polar_race {
     for (int i = 0; i < keysCount_; i++) {
       const std::string key(indexItemList[i].keyBytes, kKeyLength);
       memoryIndex[key] = indexItemList[i].offset;
+      fprintf(log_, "current key is: %s\n", key.c_str());
     }
     loaded_ = true;
+  }
+
+  RetCode FileIndex::Range(const std::string &lower, const std::string &upper, Visitor& visitor, FileValue* fv, RangeCallback rcb) {
+    auto begin = lower.empty() ? memoryIndex.begin() : memoryIndex.lower_bound(lower);
+    auto end = upper.empty() ? memoryIndex.end() : memoryIndex.upper_bound(upper);
+    for(auto it = begin; it != end; it++) {
+      RetCode ret = rcb(it->second * kValueLength, it->first, visitor, fv);
+      if (ret != kSucc) {
+        return ret;
+      }
+    }
+    return kSucc;
   }
 
 } // namespace polar_race

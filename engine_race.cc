@@ -44,6 +44,7 @@ namespace polar_race {
     int slice = partition(key);
     int64_t valueOffset;
     std::lock_guard<std::mutex> lock(*mutexList_[slice]);
+    // Note: 保证了顺序读写
     RetCode ret = keyIndexList_[slice]->Append(key.ToString(), &valueOffset);
     if (ret == kSucc) {
       if (append_) {
@@ -84,9 +85,44 @@ namespace polar_race {
 // upper=="" is treated as a key after all keys in the database.
 // Therefore the following call will traverse the entire database:
 //   Range("", "", visitor)
-  RetCode EngineRace::Range(const PolarString &lower, const PolarString &upper,
-                            Visitor &visitor) {
+
+  static RetCode visit_wrapper(int64_t offset, const std::string& key, Visitor& visitor, FileValue* fv) {
+    std::string value;
+    RetCode ret = fv->Read(offset, &value);
+    if (ret != kSucc) {
+      return ret;
+    }
+    visitor.Visit(PolarString(key), PolarString(value));
     return kSucc;
+  }
+
+  // Note: 需要加锁吗
+  RetCode EngineRace::Range(const PolarString &lower, const PolarString &upper,
+      Visitor &visitor) {
+    RetCode ret;
+    int lowerSlice = lower == "" ? 0 : partition(lower);
+    int higherSlice = upper == "" ? kSliceCount - 1: partition(upper);
+    if (lowerSlice > higherSlice) return kNotFound;
+    if (lowerSlice == higherSlice) {
+        FileValue* fv = valueFileList_[lowerSlice];
+        ret = keyIndexList_[lowerSlice]->Range(lower.ToString(), upper.ToString(), visitor, fv, visit_wrapper);
+    } else {
+      for(int i = lowerSlice; i <= higherSlice; i++) {
+        FileValue* fv = valueFileList_[i];
+        if (i == lowerSlice) {
+          ret = keyIndexList_[i]->Range(lower.ToString(), "", visitor, fv, visit_wrapper);
+        } else if (i == higherSlice) {
+          ret = keyIndexList_[i]->Range("", upper.ToString(), visitor, fv, visit_wrapper);
+        } else {
+          ret = keyIndexList_[i]->Range("", "", visitor, fv, visit_wrapper);
+        }
+        if (ret != kSucc) {
+          // stop early
+          return ret;
+        }
+      }
+    }
+    return ret;
   }
 
   RetCode EngineRace::initFileIndexList() {

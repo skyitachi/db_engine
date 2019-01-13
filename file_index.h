@@ -12,12 +12,13 @@
 #include <sys/types.h>
 #include <thread>
 #include "include/engine.h"
-
 namespace polar_race {
 
   static const int64_t kValueLength = 4096;
   static const int kKeyLength = 8;
   static const int kIndexItemLength = 16;
+
+  class FileValue;
 
   class FileIndex {
   public:
@@ -25,7 +26,7 @@ namespace polar_race {
       char keyBytes[8];
       int64_t offset;
     };
-
+    typedef RetCode RangeCallback(int64_t, const std::string&, Visitor &visitor, FileValue*);
     FileIndex(const std::string &filenameString, FILE *log);
     
     ~FileIndex() {
@@ -35,6 +36,8 @@ namespace polar_race {
     RetCode Append(const std::string &key, int64_t *offset);
 
     RetCode Lookup(const std::string &key, int64_t *offset);
+
+    RetCode Range(const std::string&, const std::string&, Visitor&, FileValue*, RangeCallback rcb);
 
   private:
     void load();

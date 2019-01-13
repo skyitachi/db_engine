@@ -50,9 +50,11 @@ public:
   ~DumpVisitor() {}
 
   void Visit(const PolarString &key, const PolarString &value) {
-    printf("Visit %s --> %s\n", key.data(), value.data());
+    printf("Visit %s\n", key.data());
     (*key_cnt_)++;
   }
+
+  const int Count() const { return *key_cnt_; }
 
 private:
   int *key_cnt_;
@@ -86,12 +88,15 @@ void benchmark_write(Engine *engine, int testCase) {
   for (int64_t i = 0; i < testCase; i++) {
     boost::asio::post(pool,
                       [i, engine, &total]() {
+
                         char keyBuf[8];
                         // 小端存储
                         memcpy(keyBuf, &i, sizeof(int64_t));
                         memcpy(gValueBuf, &i, sizeof(int64_t));
                         // showBuffer(keyBuf, 8);
-                        polar_race::PolarString k(keyBuf, 8);
+                        std::string sk = std::to_string(i);
+                        sk.resize(8);
+                        polar_race::PolarString k(sk);
                         polar_race::PolarString v(gValueBuf, 4096);
                         auto start = std::chrono::system_clock::now();
                         RetCode ret = engine->Write(k, v);
@@ -205,6 +210,7 @@ void validate(Engine* engine) {
   std::cout << "engine validate ok\n";
 }
 
+
 int main(int argc, char **argv) {
   int testCase = 10;
   if (argc > 1) {
@@ -223,8 +229,15 @@ int main(int argc, char **argv) {
   engine_log = fopen("./engine_test.log", "war+");
   
 //  benchmark_write(engine, testCase);
-  
-  benchmark_read_one_thread(engine, testCase);
+
+  int key_count = 0;
+  DumpVisitor visitor(&key_count);
+  // have problem
+  engine->Range("0", "1000", visitor);
+  // 数据不一致的原因应该是用 int64_t 大小端的原因
+  std::cout << visitor.Count() << std::endl;
+
+//  benchmark_read_one_thread(engine, testCase);
 
   delete engine;
   return 0;

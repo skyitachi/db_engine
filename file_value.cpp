@@ -10,6 +10,7 @@ namespace polar_race {
 
   RetCode FileValue::Write(const polar_race::PolarString &value, int64_t offset) {
     ssize_t nwrite = pwrite(fd_, value.data(), kValueLength, offset);
+    fprintf(log_, "offset %lld\n", offset);
     if (nwrite != kValueLength) {
       fprintf(log_, "write value error: just write %zd\n", nwrite);
       return kIOError;
